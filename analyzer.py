@@ -66,4 +66,26 @@ class BikeShare:
         self.stations = self.load_and_clean_data("stations.csv")
         self.trips = self.load_and_clean_data("trips.csv")
         self.maintenance = self.load_and_clean_data("maintenance.csv")
+
+    def generate_business_stats(self):
+
+        stats = {}
+
+        stats['total_trips'] = len(self.trips)
+
+        stats['avg_distance'] = self.trips['distance_km'].mean()
+
+        popular_station_id = self.trips['start_station_id'].mode()[0]
+        stats['popular_station'] = self.stations[self.stations['station_id'] == popular_station_id]['station_name'].values[0]
+
+        stats['peak_hour'] = self.trips['start_time'].dt.hour.mode()[0]
+
+        stats['bike_type_dist'] = self.trips['bike_type'].value_counts(normalize=True) * 100
+
+        stats['total_maint_cost'] = self.maintenance['cost'].sum()
+
+        if 'battery_level' in self.trips.columns:
+             stats['avg_battery'] = self.trips[self.trips['bike_type'] == 'electric']['battery_level'].mean()
+
+        return stats
     
