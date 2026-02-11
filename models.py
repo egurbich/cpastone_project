@@ -103,6 +103,7 @@ class MemberUser(User):
     """A registered user with an active subscription plan (Basic or Premium)."""
 
     tier = ("basic", "premium")
+    
     def __init__(
             self, 
             entity_id, 
