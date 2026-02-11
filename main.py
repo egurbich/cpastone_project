@@ -41,6 +41,21 @@ def main():
     system.stations.to_csv(output_dir / "stations.csv", index=False) # In reality, stations are already clean
     print(f"Cleaned data saved to {output_dir}")
 
+    # 5. Generate Business Report
+    print("\nStep 5: Generating Business Report...")
+    report = system.generate_business_stats()
+    
+    with open(output_dir / "summary_report.txt", "w") as f:
+        f.write("CITYBIKE SYSTEM SUMMARY REPORT\n")
+        f.write("==============================\n")
+        f.write(f"Total Trips: {report['total_trips']}\n")
+        f.write(f"Average Trip Distance: {report['avg_distance']:.2f} km\n")
+        f.write(f"Most Popular Station: {report['popular_station']}\n")
+        f.write(f"Peak Rental Hour: {report['peak_hour']}:00\n")
+        f.write(f"Total Maintenance Costs: ${report['total_maint_cost']:.2f}\n")
+        
+    print("Report generated: output/summary_report.txt")
+
     print("\n--- Capstone Project: Data Processing Phase Complete ---")
     print("Next step: Data Visualization & Business Questions.")
 
