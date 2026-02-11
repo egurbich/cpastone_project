@@ -50,8 +50,13 @@ class BikeShare:
             # set positive values in case if there negative once
             df = df[df['distance_km'] >= 0]
 
+        # 1. First fill numeric columns with 0
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        df[numeric_cols] = df[numeric_cols].fillna(0)
+
         # if there other empty cells - set there Unknown
-        df = df.fillna('Unknown')    
+        object_cols = df.select_dtypes(include=['object']).columns
+        df[object_cols] = df[object_cols].fillna('Unknown')
 
         # Validation: end_time must be after start_time
         if 'start_time' in df.columns and 'end_time' in df.columns:
@@ -78,10 +83,10 @@ class BikeShare:
         stats['total_trips'] = len(self.trips)
         stats['total_distance'] = self.trips['distance_km'].sum()
         stats['avg_distance'] = self.trips['distance_km'].mean()
-        # Assumes 'duration_min' exists or calculates it
-        if 'duration_min' not in self.trips.columns:
-            self.trips['duration_min'] = (self.trips['end_time'] - self.trips['start_time']).dt.total_seconds() / 60
-        stats['avg_duration'] = self.trips['duration_min'].mean()
+        # Assumes 'duration_minutes' exists or calculates it
+        if 'duration_minutes' not in self.trips.columns:
+            self.trips['duration_minutes'] = (self.trips['end_time'] - self.trips['start_time']).dt.total_seconds() / 60
+        stats['avg_duration'] = self.trips['duration_minutes'].mean()
 
         # 2. Top 10 Start & End Stations
         top_start = self.trips['start_station_id'].value_counts().head(10)
@@ -100,7 +105,24 @@ class BikeShare:
         # 5. Avg distance by user type
         stats['avg_dist_by_user'] = self.trips.groupby('user_type')['distance_km'].mean().to_dict()
 
-        # 6 (Skip for now - complex without fleet size)
+        # 6. Bike Utilization Rate
+        # Formula: (Total Minutes Ridden) / (Total Fleet Minutes Available)
+        # Total Fleet Minutes = (Number of unique bikes) * (Time range of dataset in minutes)
+        if not self.trips.empty and 'duration_minutes' in self.trips.columns:
+            total_trip_minutes = self.trips['duration_minutes'].sum()
+            unique_bikes_count = self.trips['bike_id'].nunique()
+            
+            # Calculate time range of dataset
+            time_range_min = (self.trips['end_time'].max() - self.trips['start_time'].min()).total_seconds() / 60
+            
+            # Avoid division by zero
+            if time_range_min > 0 and unique_bikes_count > 0:
+                 total_potential_minutes = unique_bikes_count * time_range_min
+                 stats['utilization_rate'] = (total_trip_minutes / total_potential_minutes) * 100
+            else:
+                 stats['utilization_rate'] = 0.0
+        else:
+            stats['utilization_rate'] = 0.0
 
         # 7. Monthly trip trend
         # Extract YYYY-MM
@@ -110,26 +132,42 @@ class BikeShare:
         # 8. Top 15 active users
         stats['top_users'] = self.trips['user_id'].value_counts().head(15).to_dict()
 
-        # 9. Maintenance cost by bike type
-        # We need to join maintenance with bikes or trips? 
-        # Assuming maintenance.csv has 'bike_id' and we know bike types from trips?
-        # For simplicity, let's just do total maintenance as placeholder or skip if mapping missing
+        # 9. Maintenance cost by bike type (classic vs. electric)
+        # Create a mapping of bike_id -> bike_type from trips data
+        bike_types_map = self.trips.set_index('bike_id')['bike_type'].to_dict()
+        
+        # Map bike_type to maintenance dataframe
+        # Ensure maintenance has bike_id
+        if 'bike_id' in self.maintenance.columns:
+            self.maintenance['bike_type'] = self.maintenance['bike_id'].map(bike_types_map).fillna('Unknown')
+            stats['maint_cost_by_type'] = self.maintenance.groupby('bike_type')['cost'].sum().to_dict()
+        else:
+            stats['maint_cost_by_type'] = {"Error": "bike_id missing in maintenance data"}
+        
         stats['total_maint_cost'] = self.maintenance['cost'].sum()
 
         # 10. Most common routes (Start -> End)
         stats['top_routes'] = self.trips.groupby(['start_station_id', 'end_station_id']).size().nlargest(10).reset_index(name='count')
+        
+        # Map IDs to Names for Route using the shared helper
+        stats['top_routes']['start_name'] = stats['top_routes']['start_station_id'].apply(self.get_station_name)
+        stats['top_routes']['end_name'] = stats['top_routes']['end_station_id'].apply(self.get_station_name)
 
         # 12. Avg trips per user
         stats['avg_trips_per_user_type'] = self.trips.groupby('user_type')['user_id'].value_counts().groupby('user_type').mean().to_dict()
 
         return stats
+    
+    def get_station_name(self, station_id):
+        """Helper to get a single station name from an ID"""
+        name = self.stations.loc[self.stations['station_id'] == station_id, 'station_name']
+        return name.values[0] if not name.empty else f"Station {station_id}"
 
     def _map_station_names(self, series_ids):
-        """Helper to map station IDs to names"""
+        """Helper to map station IDs (index) to names (keys) with counts (values)"""
         result = {}
         for sid, count in series_ids.items():
-            name = self.stations.loc[self.stations['station_id'] == sid, 'station_name']
-            station_label = name.values[0] if not name.empty else f"Station {sid}"
+            station_label = self.get_station_name(sid)
             result[station_label] = count
         return result
     

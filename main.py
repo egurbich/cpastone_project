@@ -57,21 +57,31 @@ def main():
              f.write(f"   - {st}: {count}\n")
         
         f.write(f"\n3. Peak Rental Hour: {report['peak_hour']}:00\n")
-        f.write(f"4. Busiest Day: {report['busiest_day']}\n")
+        f.write(f"\n4. Busiest Day: {report['busiest_day']}\n")
         
         f.write("\n5. Avg Distance by User Type:\n")
+        
         for u_type, dist in report['avg_dist_by_user'].items():
             f.write(f"   - {u_type}: {dist:.2f} km\n")
+
+        f.write(f"\n6. Bike Utilization Rate:\n")
+        f.write(f"   - {report['utilization_rate']:.2f}%\n")
 
         f.write("\n7. Monthly Trend (Last 5 Months):\n")
         for month, count in list(report['monthly_trend'].items())[-5:]:
             f.write(f"   - {month}: {count} trips\n")
 
-        f.write("\n10. Top Routes (Station ID -> Station ID):\n")
-        for idx, row in report['top_routes'].head(10).iterrows():
-            f.write(f"   - {row['start_station_id']} -> {row['end_station_id']}: {row['count']}\n")
+        f.write("\n8. Top 15 Active Users:\n")
+        for user, count in report['top_users'].items():
+            f.write(f"   - User {user}: {count} trips\n")
 
-        f.write(f"\nTotal Maintenance Costs: ${report['total_maint_cost']:.2f}\n")
+        f.write("\n9. Maintenance Cost by Bike Type:\n")
+        for b_type, cost in report['maint_cost_by_type'].items():
+            f.write(f"   - {b_type}: ${cost:.2f}\n")
+
+        f.write("\n10. Top Routes (Station Name -> Station Name):\n")
+        for idx, row in report['top_routes'].head(10).iterrows():
+            f.write(f"   - {row['start_name']} -> {row['end_name']}: {row['count']}\n")
         
     print("Report generated: output/summary_report.txt")
 
