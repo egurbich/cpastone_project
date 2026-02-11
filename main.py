@@ -48,13 +48,45 @@ def main():
     with open(output_dir / "summary_report.txt", "w") as f:
         f.write("CITYBIKE SYSTEM SUMMARY REPORT\n")
         f.write("==============================\n")
-        f.write(f"Total Trips: {report['total_trips']}\n")
-        f.write(f"Average Trip Distance: {report['avg_distance']:.2f} km\n")
-        f.write(f"Most Popular Station: {report['popular_station']}\n")
-        f.write(f"Peak Rental Hour: {report['peak_hour']}:00\n")
-        f.write(f"Total Maintenance Costs: ${report['total_maint_cost']:.2f}\n")
+        f.write(f"1. Total Trips: {report['total_trips']}\n")
+        f.write(f"   Total Distance: {report['total_distance']:.2f} km\n")
+        f.write(f"   Avg Duration: {report['avg_duration']:.2f} min\n\n")
+        
+        f.write("2. Top 10 Start Stations:\n")
+        for st, count in list(report['top_10_start'].items())[:10]:
+             f.write(f"   - {st}: {count}\n")
+        
+        f.write(f"\n3. Peak Rental Hour: {report['peak_hour']}:00\n")
+        f.write(f"4. Busiest Day: {report['busiest_day']}\n")
+        
+        f.write("\n5. Avg Distance by User Type:\n")
+        for u_type, dist in report['avg_dist_by_user'].items():
+            f.write(f"   - {u_type}: {dist:.2f} km\n")
+
+        f.write("\n7. Monthly Trend (Last 5 Months):\n")
+        for month, count in list(report['monthly_trend'].items())[-5:]:
+            f.write(f"   - {month}: {count} trips\n")
+
+        f.write("\n10. Top Routes (Station ID -> Station ID):\n")
+        for idx, row in report['top_routes'].head(10).iterrows():
+            f.write(f"   - {row['start_station_id']} -> {row['end_station_id']}: {row['count']}\n")
+
+        f.write(f"\nTotal Maintenance Costs: ${report['total_maint_cost']:.2f}\n")
         
     print("Report generated: output/summary_report.txt")
+
+    # 6. Visualization Phase
+    print("\nStep 6: Generating Visualizations...")
+    from visualization import Visualizer
+    viz = Visualizer(output_path=output_dir / "figures")
+    
+    viz.plot_bike_types(system.trips)
+    viz.plot_peak_hours(system.trips)
+    viz.plot_top_stations(system.trips, system.stations)
+    viz.plot_trip_distances(system.trips)
+    
+    print(f"Visualizations saved to: output/figures/")
+    print("\n✅ ALL MILESTONES COMPLETE!")
 
     print("\n--- Capstone Project: Data Processing Phase Complete ---")
     print("Next step: Data Visualization & Business Questions.")
