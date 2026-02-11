@@ -94,10 +94,24 @@ python main.py
 
 ```text
 Step 1: Initializing BikeShare System...
+File stations.csv: 15 -> 15 rows (Cleaned).
+File trips.csv: 1515 -> 1485 rows (Cleaned).
+File maintenance.csv: 200 -> 200 rows (Cleaned).
+
 Step 2: Processing Numerical Data...
+Numerical processing engine: READY
+
 Step 3: Running Custom Sorting Algorithms...
 Sorted 10 sample trips by distance using Merge Sort.
+
 Step 4: Saving Cleaned Datasets...
+Cleaned data saved to D:\learning\HsH\teil2\python2\cpastone_project\output
+
 Step 5: Generating Business Report...
 Report generated: output/summary_report.txt
+
+Step 6: Generating Visualizations...
+Visualizations saved to: output/figures/
+
+✅ ALL MILESTONES COMPLETE!
 ```
